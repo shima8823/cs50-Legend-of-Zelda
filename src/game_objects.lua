@@ -14,6 +14,7 @@ GAME_OBJECT_DEFS = {
         width = 16,
         height = 16,
         solid = false,
+        consumable = false,
         defaultState = 'unpressed',
         states = {
             ['unpressed'] = {
@@ -26,5 +27,24 @@ GAME_OBJECT_DEFS = {
     },
     ['pot'] = {
         -- TODO
-    }
+    },
+    ['heart'] = {
+        type = 'heart',
+        texture = 'hearts',
+        frame = 5,
+        width = 16,
+        height = 16,
+        solid = false,
+        consumable = true,
+        defaultState = 'full',
+        states = {
+            ['full'] = {
+                frame = 5
+            }
+        },
+        onConsume = function(player)
+            gSounds['recovery']:play()
+            player.health = math.min(6, player.health + 2)
+        end
+    },
 }
