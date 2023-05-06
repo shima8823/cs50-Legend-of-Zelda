@@ -36,8 +36,13 @@ function GameObject:init(def, x, y)
     self.onConsume = def.onConsume
 end
 
-function GameObject:update(dt)
-
+function GameObject:update(dt, player)
+    if self.type == 'pot' then
+        if player.hasPot and player.pot == self then
+            self.x = player.x
+            self.y = player.y - self.height + 7
+        end
+    end
 end
 
 function GameObject:render(adjacentOffsetX, adjacentOffsetY)
