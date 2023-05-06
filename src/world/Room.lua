@@ -33,6 +33,8 @@ function Room:init(player, dungeon)
     -- reference to player for collisions, etc.
     self.player = player
 
+    self.player.hasPot = false
+
     -- used for centering the dungeon rendering
     self.renderOffsetX = MAP_RENDER_OFFSET_X
     self.renderOffsetY = MAP_RENDER_OFFSET_Y
