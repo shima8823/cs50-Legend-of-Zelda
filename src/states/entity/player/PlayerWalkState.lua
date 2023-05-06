@@ -18,24 +18,37 @@ function PlayerWalkState:init(player, dungeon)
 end
 
 function PlayerWalkState:update(dt)
+    local animationName = 'walk-'
+    if self.entity.hasPot then
+        animationName = 'walk-pot-'
+    end
     if love.keyboard.isDown('left') then
         self.entity.direction = 'left'
-        self.entity:changeAnimation('walk-left')
+        self.entity:changeAnimation(animationName .. 'left')
     elseif love.keyboard.isDown('right') then
         self.entity.direction = 'right'
-        self.entity:changeAnimation('walk-right')
+        self.entity:changeAnimation(animationName .. 'right')
     elseif love.keyboard.isDown('up') then
         self.entity.direction = 'up'
-        self.entity:changeAnimation('walk-up')
+        self.entity:changeAnimation(animationName .. 'up')
     elseif love.keyboard.isDown('down') then
         self.entity.direction = 'down'
-        self.entity:changeAnimation('walk-down')
+        self.entity:changeAnimation(animationName .. 'down')
     else
         self.entity:changeState('idle')
     end
 
     if love.keyboard.wasPressed('space') then
-        self.entity:changeState('swing-sword')
+        if self.entity.hasPot then
+            self.entity:changeState('pot-throw')
+            self.entity.pot.projectile = Projectile(self.entity, self.dungeon)
+            self.entity.pot = nil
+        else
+            self.entity:changeState('swing-sword')
+        end
+    end
+    if (love.keyboard.wasPressed('enter') or love.keyboard.wasPressed('return')) and self.entity.pot and not self.entity.hasPot and not self.entity.pot.isBroken then
+        self.entity:changeState('pot-lift')
     end
 
     -- perform base collision detection against walls
