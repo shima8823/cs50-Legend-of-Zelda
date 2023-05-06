@@ -184,15 +184,6 @@ function Room:update(dt)
     for i = #self.entities, 1, -1 do
         local entity = self.entities[i]
 
-        -- if object's type is pot, check if it is thrown and if it collides with an entity
-        for k, object in pairs(self.objects) do
-            if object.type == 'pot' and object.isThrown and entity:collides(object) and not object.isBroken then
-                entity.health = entity.health + -1
-                object.projectile.onCollision(object.projectile)
-                object.projectile.stopPostion(object.projectile, entity)
-            end
-        end
-
         if entity.health == 0 then
             entity.dead = true
             entity.health = -1
@@ -202,6 +193,14 @@ function Room:update(dt)
         elseif not entity.dead then
             entity:processAI({room = self}, dt)
             entity:update(dt)
+            -- if object's type is pot, check if it is thrown and if it collides with an entity
+            for k, object in pairs(self.objects) do
+                if object.type == 'pot' and object.isThrown and entity:collides(object) and not object.isBroken then
+                    entity.health = entity.health + -1
+                    object.projectile.onCollision(object.projectile)
+                    object.projectile.stopPostion(object.projectile, entity)
+                end
+            end
         end
 
         -- collision between the player and entities in the room
