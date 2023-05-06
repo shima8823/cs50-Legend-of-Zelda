@@ -8,7 +8,7 @@
 
 Room = Class{}
 
-function Room:init(player)
+function Room:init(player, dungeon)
     self.width = MAP_WIDTH
     self.height = MAP_HEIGHT
 
@@ -17,7 +17,7 @@ function Room:init(player)
 
     -- entities in the room
     self.entities = {}
-    self:generateEntities()
+    self:generateEntities(dungeon)
 
     -- game objects in the room
     self.objects = {}
@@ -45,7 +45,7 @@ end
 --[[
     Randomly creates an assortment of enemies for the player to fight.
 ]]
-function Room:generateEntities()
+function Room:generateEntities(dungeon)
     local types = {'skeleton', 'slime', 'bat', 'ghost', 'spider'}
 
     for i = 1, 10 do
@@ -68,8 +68,8 @@ function Room:generateEntities()
         })
 
         self.entities[i].stateMachine = StateMachine {
-            ['walk'] = function() return EntityWalkState(self.entities[i]) end,
-            ['idle'] = function() return EntityIdleState(self.entities[i]) end
+            ['walk'] = function() return EntityWalkState(self.entities[i], dungeon) end,
+            ['idle'] = function() return EntityIdleState(self.entities[i], dungeon) end
         }
 
         self.entities[i]:changeState('walk')
@@ -102,8 +102,36 @@ function Room:generateObjects()
         end
     end
 
+    self:generatePot()
+    self:generatePot()
     -- add to list of objects in scene (only one switch for now)
     table.insert(self.objects, switch)
+end
+
+function Room:generatePot()
+    local pot = GameObject(
+        GAME_OBJECT_DEFS['pot'],
+        math.random(MAP_RENDER_OFFSET_X + TILE_SIZE,
+                    VIRTUAL_WIDTH - TILE_SIZE * 2 - 16),
+        math.random(MAP_RENDER_OFFSET_Y + TILE_SIZE,
+                    VIRTUAL_HEIGHT - (VIRTUAL_HEIGHT - MAP_HEIGHT * TILE_SIZE) + MAP_RENDER_OFFSET_Y - TILE_SIZE - 16)
+    )
+    pot.onCollide = function(object, player)
+        if object.solid then
+            if player.direction == 'left' then
+                player.x = object.x + object.width + 0.5
+            elseif player.direction == 'right' then
+                player.x = object.x - player.width - 1
+            elseif player.direction == 'up' then
+                player.y = object.y + object.height / 2 - 2.5
+            elseif player.direction == 'down' then
+                player.y = object.y - player.height - 1
+            end
+            player.pot = object
+            player.potDirection = player.direction
+        end
+    end
+    table.insert(self.objects, pot)
 end
 
 --[[
@@ -156,6 +184,15 @@ function Room:update(dt)
     for i = #self.entities, 1, -1 do
         local entity = self.entities[i]
 
+        -- if object's type is pot, check if it is thrown and if it collides with an entity
+        for k, object in pairs(self.objects) do
+            if object.type == 'pot' and object.isThrown and entity:collides(object) and not object.isBroken then
+                entity.health = entity.health + -1
+                object.projectile.onCollision(object.projectile)
+                object.projectile.stopPostion(object.projectile, entity)
+            end
+        end
+
         if entity.health == 0 then
             entity.dead = true
             entity.health = -1
@@ -180,15 +217,19 @@ function Room:update(dt)
     end
 
     for k, object in pairs(self.objects) do
-        object:update(dt)
+        object:update(dt, self.player)
 
+        if object.projectile then
+            object.projectile:update(dt)
+        end
+    
         -- trigger collision callback on object
         if self.player:collides(object) then
             if object.consumable then
                 object.onConsume(self.player)
                 table.remove(self.objects, k)
             else
-                object:onCollide()
+                object:onCollide(self.player)
             end
         end
     end
@@ -242,6 +283,10 @@ function Room:render()
     
     if self.player then
         self.player:render()
+        if self.player.hasPot then
+            self.player.pot:render(self.adjacentOffsetX, self.adjacentOffsetY)
+        end
+
     end
 
     love.graphics.setStencilTest()
