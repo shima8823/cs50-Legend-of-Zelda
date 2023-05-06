@@ -10,10 +10,15 @@ Player = Class{__includes = Entity}
 
 function Player:init(def)
     Entity.init(self, def)
+    self.pot = nil
+    self.potDirection = 'none'
 end
 
 function Player:update(dt)
     Entity.update(self, dt)
+    if not (self.direction == self.potDirection) and not self.hasPot then
+        self.pot = nil
+    end
 end
 
 function Player:collides(target)
